@@ -1,11 +1,1 @@
-# Admin access codes for the key generator - one per line. Lines starting with # are ignored.
-#
-# - Each code works for ONE person/device: the first browser that enters it is remembered
-#   (and signed in automatically from then on). Anyone else who enters it is sent to about:blank.
-# - Give every person you trust their own code. Delete a line to revoke that code.
-# - Use long random codes, e.g. 20+ random letters/digits. Do NOT use easy words.
-# - This file is NOT served to the public (it is kept out of the public/ folder), but treat the
-#   repository as private anyway.
-# - After editing, commit + push; Vercel redeploys in about 30 seconds.
-#
-# Add your codes below (replace this line):
+CinnamonSuper!21
