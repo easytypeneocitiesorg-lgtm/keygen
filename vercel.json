@@ -1,0 +1,4 @@
+{
+  "functions": { "api/*.js": { "includeFiles": "codes.txt" } },
+  "redirects": [{ "source": "/codes.txt", "destination": "/", "permanent": false }]
+}
