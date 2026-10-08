@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Key console</title>
+<style>
+  :root{
+    --bg:#121317; --card:#1a1c22; --raise:#23262e; --line:#2f333d;
+    --text:#ecebe6; --dim:#9a9ca6; --gold:#f2b84b; --gold-ink:#241a05;
+    --ok:#62d29c; --red:#ff7070; --blue:#7aa7ff;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  body{min-height:100%;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+  [hidden]{display:none!important}
+  button,input,select{font:inherit;color:inherit}
+  button,select{background:var(--raise);border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer}
+  button:hover,select:hover{border-color:#4b5060}
+  button:disabled{opacity:.45;cursor:default}
+  input,select{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 12px}
+  :focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+  .primary{background:var(--gold);border-color:var(--gold);color:var(--gold-ink);font-weight:650}
+  .primary:hover{border-color:#ffd37f;background:#f7c466}
+  .danger{background:#4a2327;border-color:#8b3a42;color:#ffd6d6}
+
+  /* ---------- gate ---------- */
+  #gate{min-height:100vh;display:grid;place-items:center;padding:24px}
+  .gatecard{width:min(380px,100%);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:26px}
+  .gatecard h1{margin:0 0 4px;font-size:18px}
+  .gatecard p{margin:0 0 16px;color:var(--dim)}
+  .gatecard form{display:flex;gap:8px}
+  .gatecard input{flex:1;min-width:0;font-family:var(--mono)}
+  #gmsg{min-height:20px;margin:12px 0 0;color:var(--gold);font-size:13px}
+
+  /* ---------- app ---------- */
+  #app{max-width:1180px;margin:0 auto;padding:22px 18px 60px}
+  header{display:flex;align-items:baseline;gap:12px;margin-bottom:18px}
+  header h1{margin:0;font-size:20px;letter-spacing:.01em}
+  header span{color:var(--dim)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:18px}
+  .card h2{margin:0 0 12px;font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--dim);font-weight:600}
+
+  .genrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .genrow select{min-width:230px}
+  .outrow{display:flex;gap:8px;margin-top:14px;max-width:560px}
+  #out{flex:1;min-width:0;font:600 20px var(--mono);letter-spacing:.06em;padding:10px 14px;text-align:center}
+  #outmeta{margin-top:8px;min-height:20px;color:var(--dim);font-size:13px}
+  #outmeta b{color:var(--text);font-family:var(--mono);letter-spacing:.08em}
+  #generr{color:var(--red);margin-top:8px;min-height:0}
+
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+  .toolbar input{width:190px;font-family:var(--mono);text-transform:uppercase}
+  .toolbar input::placeholder{text-transform:none;font-family:system-ui}
+  .stats{margin-left:auto;display:flex;gap:16px;color:var(--dim);font-size:13px}
+  .stats b{color:var(--text);font-variant-numeric:tabular-nums}
+
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+  table{width:100%;border-collapse:collapse;min-width:860px}
+  th,td{padding:9px 12px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--line)}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);font-weight:600;background:#17191e;position:sticky;top:0}
+  tr:last-child td{border-bottom:0}
+  td.mono,.mono{font-family:var(--mono);letter-spacing:.04em}
+  td.id{font:600 13px var(--mono);letter-spacing:.1em}
+  .pill{display:inline-block;padding:1px 9px;border-radius:99px;font-size:12px;border:1px solid var(--line)}
+  .pill.active{color:var(--ok);border-color:#2c5a45;background:#16271f}
+  .pill.expired{color:var(--dim)}
+  .pill.deactivated{color:var(--red);border-color:#6a3338;background:#2a1719}
+  .pill.yes{color:var(--blue);border-color:#33466f;background:#161d2e}
+  .actions{display:flex;gap:6px}
+  .actions button{padding:3px 10px;font-size:12px;border-radius:6px}
+  .empty{padding:26px;text-align:center;color:var(--dim)}
+  .note{color:var(--dim);font-size:12px;margin-top:10px}
+  #listerr{color:var(--red);font-size:13px;margin-bottom:8px}
+</style>
+</head>
+<body>
+
+<!-- ============ access code gate ============ -->
+<main id="gate" hidden>
+  <div class="gatecard">
+    <h1>Access code</h1>
+    <p>Enter your code to continue.</p>
+    <form id="gform" autocomplete="off">
+      <input id="code" type="password" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Access code" required>
+      <button class="primary" id="gbtn">Enter</button>
+    </form>
+    <div id="gmsg" role="status" aria-live="polite"></div>
+  </div>
+</main>
+
+<!-- ============ console ============ -->
+<div id="app" hidden>
+  <header><h1>Key console</h1><span>Generate and manage access keys</span></header>
+
+  <section class="card" aria-labelledby="h-gen">
+    <h2 id="h-gen">Generate a key</h2>
+    <div class="genrow">
+      <select id="type" aria-label="Key type">
+        <option value="d">Demo &mdash; lasts 8 hours</option>
+        <option value="s" selected>Standard &mdash; lasts 20 days</option>
+        <option value="p">Permanent &mdash; never expires</option>
+      </select>
+      <button id="gen" class="primary">Generate key</button>
+    </div>
+    <div class="outrow">
+      <input id="out" type="text" readonly placeholder="Your key appears here" aria-label="Generated key">
+      <button id="copy" disabled>Copy</button>
+    </div>
+    <div id="outmeta"></div>
+    <div id="generr" role="alert"></div>
+  </section>
+
+  <section class="card" aria-labelledby="h-mgr">
+    <h2 id="h-mgr">Key manager</h2>
+    <div class="toolbar">
+      <input id="search" type="search" maxlength="4" placeholder="Search by ID" aria-label="Search by 4-character ID" autocomplete="off" spellcheck="false">
+      <select id="filter" aria-label="Filter keys">
+        <option value="all">All keys</option>
+        <option value="active">Active</option>
+        <option value="unused">Active &amp; unused</option>
+        <option value="used">Used</option>
+        <option value="expired">Expired</option>
+        <option value="deactivated">Deactivated</option>
+      </select>
+      <button id="refresh">Refresh</button>
+      <div class="stats">
+        <span>Total <b id="s-total">0</b></span>
+        <span>Active <b id="s-active">0</b></span>
+        <span>Unused <b id="s-unused">0</b></span>
+        <span>Used <b id="s-used">0</b></span>
+      </div>
+    </div>
+    <div id="listerr" role="alert"></div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr>
+          <th>ID</th><th>Key</th><th>Type</th><th>Used</th><th>Status</th><th>Time left</th><th>Created</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="note">Deactivating a key signs out anyone using it (or waiting in the queue with it) within a few seconds.
+      &ldquo;Release&rdquo; frees a used key so a different device can use it.</div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const store = {
+    get: k => { try { return localStorage.getItem(k); } catch { return null; } },
+    set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
+    del: k => { try { localStorage.removeItem(k); } catch {} },
+  };
+  const device = (() => {
+    let d = store.get('kg_device');
+    if (!d || !/^[A-Za-z0-9_-]{16,64}$/.test(d)) {
+      d = crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '')
+        : Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
+      store.set('kg_device', d);
+    }
+    return d;
+  })();
+
+  let code = '', skew = 0, keys = [], timer = null;
+  const now = () => Date.now() + skew;
+  const KIND = {s: 'Standard', d: 'Demo', p: 'Permanent'};
+
+  /* ---------- access gate ---------- */
+  const showGate = msg => {
+    clearInterval(timer); $('#app').hidden = true; $('#gate').hidden = false;
+    $('#gmsg').textContent = msg || ''; $('#code').value = ''; $('#code').focus();
+  };
+
+  async function login(c) {
+    try {
+      const r = await fetch('/api/login', {method: 'POST', cache: 'no-store', headers: {'x-code': c, 'x-device': device}});
+      return r.status === 200 ? 'ok' : r.status === 401 ? 'denied' : r.status === 429 ? 'rate' : 'error';
+    } catch { return 'error'; }
+  }
+  function enter(c) {
+    code = c; store.set('kg_code', c);
+    $('#gate').hidden = true; $('#app').hidden = false;
+    loadKeys();
+    clearInterval(timer);
+    timer = setInterval(tick, 1000);
+    setInterval(() => { if (!$('#app').hidden) loadKeys(true); }, 20000);
+  }
+
+  $('#gform').addEventListener('submit', async e => {
+    e.preventDefault();
+    const c = $('#code').value.trim();
+    if (!c) return;
+    $('#gbtn').disabled = true; $('#gmsg').textContent = 'Checking\u2026';
+    const r = await login(c);
+    $('#gbtn').disabled = false;
+    if (r === 'ok') return enter(c);
+    if (r === 'denied') return void location.replace('about:blank');    // wrong code: replace this tab with a blank one
+    $('#gmsg').textContent = r === 'rate' ? 'Too many attempts. Try again later.' : 'Couldn\u2019t reach the server. Try again.';
+  });
+
+  /* ---------- API ---------- */
+  async function api(path, body) {
+    try {
+      const r = await fetch(path, {
+        method: body ? 'POST' : 'GET', cache: 'no-store',
+        headers: {'x-code': code, 'x-device': device, 'Content-Type': 'application/json'},
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      if (r.status === 401) { store.del('kg_code'); showGate('Your access code is no longer valid.'); return null; }
+      const data = await r.json().catch(() => ({}));
+      return {ok: r.ok, status: r.status, data};
+    } catch { return {ok: false, status: 0, data: {error: 'Couldn\u2019t reach the server.'}}; }
+  }
+
+  /* ---------- generate ---------- */
+  const fmtDate = ms => new Date(ms).toLocaleString([], {dateStyle: 'medium', timeStyle: 'short'});
+  $('#gen').onclick = async () => {
+    $('#gen').disabled = true; $('#generr').textContent = '';
+    const r = await api('/api/generate', {type: $('#type').value});
+    $('#gen').disabled = false;
+    if (!r) return;
+    if (!r.ok) { $('#generr').textContent = r.data.error || 'Could not generate a key.'; return; }
+    const k = r.data;
+    $('#out').value = k.key; $('#copy').disabled = false; $('#copy').textContent = 'Copy';
+    const meta = $('#outmeta'); meta.textContent = '';
+    const id = document.createElement('b'); id.textContent = k.tag;
+    meta.append('ID ', id, ` \u00b7 ${KIND[k.kind]} \u00b7 ` + (k.expires ? 'expires ' + fmtDate(k.expires) : 'never expires') + ' \u00b7 valid right now');
+    loadKeys(true);
+  };
+  $('#copy').onclick = async () => {
+    const v = $('#out').value; if (!v) return;
+    try { await navigator.clipboard.writeText(v); }
+    catch { $('#out').select(); document.execCommand && document.execCommand('copy'); }
+    $('#copy').textContent = 'Copied \u2713';
+    setTimeout(() => { $('#copy').textContent = 'Copy'; }, 1600);
+  };
+
+  /* ---------- manager ---------- */
+  const statusOf = k => !k.active ? 'deactivated' : (k.expires && k.expires <= now() ? 'expired' : 'active');
+  function left(k) {
+    if (!k.expires) return '\u221e';
+    const ms = k.expires - now();
+    if (ms <= 0) return '\u2014';
+    const s = Math.floor(ms / 1000), m = Math.floor(s / 60), h = Math.floor(m / 60), d = Math.floor(h / 24);
+    if (d >= 1) return `${d}d ${h % 24}h ${m % 60}m`;
+    if (h >= 1) return `${h}h ${m % 60}m`;
+    return `${m}m ${String(s % 60).padStart(2, '0')}s`;
+  }
+
+  async function loadKeys(quiet) {
+    if (!quiet) $('#listerr').textContent = '';
+    const r = await api('/api/keys');
+    if (!r) return;
+    if (!r.ok) { $('#listerr').textContent = r.data.error || 'Could not load keys.'; return; }
+    skew = r.data.now - Date.now(); keys = r.data.keys; $('#listerr').textContent = '';
+    render();
+  }
+  $('#refresh').onclick = () => loadKeys();
+
+  const cells = [];   // {k, status, left} elements, refreshed every second
+  function td(text, cls) { const e = document.createElement('td'); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; }
+  function pill(text, cls) { const s = document.createElement('span'); s.className = 'pill ' + cls; s.textContent = text; return s; }
+
+  // two-step buttons instead of browser confirm() dialogs
+  function twoStep(label, cls, run) {
+    const b = document.createElement('button'); b.textContent = label; if (cls) b.className = cls;
+    let armed = null;
+    b.onclick = async () => {
+      if (!armed) {
+        b.textContent = 'Confirm?'; b.classList.add('danger');
+        armed = setTimeout(() => { armed = null; b.textContent = label; b.classList.remove('danger'); }, 3000);
+        return;
+      }
+      clearTimeout(armed); armed = null; b.disabled = true; b.textContent = '\u2026';
+      await run(); b.disabled = false;
+    };
+    return b;
+  }
+
+  function render() {
+    const q = $('#search').value.trim().toUpperCase(), f = $('#filter').value;
+    const total = keys.length, st = keys.map(statusOf);
+    $('#s-total').textContent = total;
+    $('#s-active').textContent = st.filter(s => s === 'active').length;
+    $('#s-unused').textContent = keys.filter((k, i) => st[i] === 'active' && !k.used).length;
+    $('#s-used').textContent = keys.filter(k => k.used).length;
+
+    const shown = keys.filter((k, i) => {
+      if (q && !(k.tag || '').includes(q)) return false;
+      if (f === 'active') return st[i] === 'active';
+      if (f === 'unused') return st[i] === 'active' && !k.used;
+      if (f === 'used') return k.used;
+      if (f === 'expired' || f === 'deactivated') return st[i] === f;
+      return true;
+    }).slice(0, 1000);
+
+    const body = $('#rows'); body.textContent = ''; cells.length = 0;
+    if (!shown.length) {
+      const tr = document.createElement('tr'), c = td(total ? 'No keys match.' : 'No keys yet \u2014 generate one above.', 'empty');
+      c.colSpan = 8; tr.append(c); body.append(tr); return;
+    }
+    for (const k of shown) {
+      const tr = document.createElement('tr');
+      const status = td(), lf = td(null, 'mono');
+      const used = td(); used.append(k.used ? pill('Yes', 'yes') : pill('No', ''));
+      if (k.used && k.usedAt) used.title = 'First used ' + fmtDate(k.usedAt);
+      const act = td(); const box = document.createElement('div'); box.className = 'actions'; act.append(box);
+
+      const copy = document.createElement('button'); copy.textContent = 'Copy';
+      copy.onclick = async () => {
+        try { await navigator.clipboard.writeText(k.key); copy.textContent = 'Copied \u2713'; } catch { copy.textContent = 'Press Ctrl+C'; }
+        setTimeout(() => { copy.textContent = 'Copy'; }, 1400);
+      };
+      box.append(copy);
+      const deact = twoStep('Deactivate', '', async () => {
+        const r = await api('/api/deactivate', {key: k.key});
+        if (r && !r.ok) $('#listerr').textContent = r.data.error || 'Could not deactivate.';
+        await loadKeys(true);
+      });
+      const rel = twoStep('Release', '', async () => {
+        const r = await api('/api/release', {key: k.key});
+        if (r && !r.ok) $('#listerr').textContent = r.data.error || 'Could not release.';
+        await loadKeys(true);
+      });
+      rel.title = 'Let a different device use this key';
+      box.append(deact, rel);
+
+      tr.append(td(k.tag, 'id'), td(k.key, 'mono'), td(KIND[k.kind] || k.kind), used, status, lf, td(fmtDate(k.created)), act);
+      body.append(tr);
+      cells.push({k, status, lf, deact, rel});
+    }
+    tick();
+  }
+
+  function tick() {
+    for (const c of cells) {
+      const s = statusOf(c.k);
+      if (c.status.dataset.s !== s) {
+        c.status.dataset.s = s; c.status.textContent = '';
+        c.status.append(pill(s[0].toUpperCase() + s.slice(1), s));
+      }
+      c.lf.textContent = s === 'deactivated' ? '\u2014' : left(c.k);
+      c.deact.hidden = s !== 'active';
+      c.rel.hidden = !c.k.used;
+    }
+  }
+
+  $('#search').addEventListener('input', render);
+  $('#filter').addEventListener('change', render);
+
+  /* ---------- boot: a saved code signs in automatically ---------- */
+  (async () => {
+    const saved = store.get('kg_code');
+    if (!saved) return showGate();
+    const r = await login(saved);
+    if (r === 'ok') return enter(saved);
+    store.del('kg_code');
+    showGate(r === 'denied' ? 'That saved code no longer works. Enter a code.'
+      : r === 'rate' ? 'Too many attempts. Try again later.' : 'Couldn\u2019t reach the server. Try again.');
+  })();
+})();
+</script>
+</body>
+</html>
