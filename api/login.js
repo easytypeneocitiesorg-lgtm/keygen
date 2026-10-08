@@ -1,0 +1,5 @@
+// Used by the page to check an admin code (and to remember this device for it).
+const { authenticate } = require("./_lib");
+module.exports = async (req, res) => {
+  if (await authenticate(req, res)) res.status(200).json({ ok: true });
+};
