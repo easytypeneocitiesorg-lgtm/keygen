@@ -111,6 +111,7 @@ async function listKeys() {
         key, kind: r.kind, tag: r.tag, created: Number(r.created) || 0,
         expires: r.expires ? Number(r.expires) : null,
         active: r.active !== "0",
+        archived: r.archived === "1",
         used: !!r.owner,                           // the device id itself is never sent to the browser
         usedAt: r.usedAt ? Number(r.usedAt) : null,
       });
