@@ -1,5 +1,8 @@
 const { authenticate, readBody, generateKey } = require("./_lib");
+const cors = require("./_cors");
+
 module.exports = async (req, res) => {
+  if (cors(req, res)) return;
   if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
   if (!(await authenticate(req, res))) return;
   try {
